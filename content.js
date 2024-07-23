@@ -51,7 +51,9 @@ async function createDropdown(inputElement, idCount) {
     option.style.cursor = 'pointer';
     option.style.borderBottom = '1px solid #ddd';
     option.addEventListener('click', () => {
-      inputElement.value = option.textContent;
+      inputElement.value = name;
+      const event = new Event('input', { bubbles: true });
+      inputElement.dispatchEvent(event);
       dropdown.remove();
     });
     dropdown.appendChild(option);
