@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Myth用户名生成器",
+    "version": "1.0",
+    "description": "自动生成用户名",
+    "permissions": ["activeTab", "storage","webRequest","background"],
+    "action": {
+      "default_popup": "popup.html"
+      
+    },
+    "background": {
+    "service_worker": "background.js"
+  },
+    "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+    
+  ]
+  }
+  
