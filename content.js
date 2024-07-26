@@ -1,24 +1,65 @@
-// 随机用户名生成函数
-async function getRandomUsernames(count) {
-  // 生成对应数量的随机数，从100到1000000000
-  const uids = Array.from({ length: count }, () => Math.floor(Math.random() * (1000000000 - 100 + 1)) + 100);
-  // 拼接随机数，用逗号分隔
-  const uidsStr = uids.join(',');
-  // API接口地址
-  const apiUrl = `https://api.vc.bilibili.com/account/v1/user/cards?uids=${uidsStr}`;
-  const referer = "https://www.bilibili.com";  // 替换为你需要的Referer
+// 创建加载动画元素
+function createLoadingAnimation() {
+  const loading = document.createElement('div');
+  loading.id = 'loading-animation';
+  loading.style.position = 'absolute';
+  loading.style.width = '20px';
+  loading.style.height = '20px';
+  loading.style.borderRadius = '50%';
+  loading.style.border = '3px solid rgba(0, 0, 0, 0.1)';
+  loading.style.borderTop = '3px solid #3498db';
+  loading.style.animation = 'spin 1s linear infinite';
+  return loading;
+}
 
-  // 发送消息到background.js
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ action: "fetchUsernames", url: apiUrl, referer: referer }, (response) => {
-      if (response.success) {
-        const names = response.data.data.map(user => user.name);
-        resolve(names);
-      } else {
-        reject(response.error);
-      }
-    });
-  });
+// 添加CSS动画
+const style = document.createElement('style');
+style.type = 'text/css';
+style.innerHTML = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
+
+async function getRandomUsernames(count) {
+  let usernames = [];
+
+  while (usernames.length < count) {
+    // 生成随机数列表
+    const uids = Array.from({ length: count - usernames.length }, () => Math.floor(Math.random() * (1000000000 - 100 + 1)) + 100);
+    // 拼接随机数，用逗号分隔
+    const uidsStr = uids.join(',');
+    // API接口地址
+    const apiUrl = `https://api.vc.bilibili.com/account/v1/user/cards?uids=${uidsStr}`;
+
+    try {
+      // 发送消息到background.js
+      const newNames = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ action: "fetchUsernames", url: apiUrl }, (response) => {
+          if (response.success) {
+            const names = response.data.data.map(user => user.name);
+            resolve(names);
+          } else {
+            reject(response.error);
+          }
+        });
+      });
+
+      // 过滤掉包含bili或BILI的用户名
+      const filteredNames = newNames.filter(name => !/bili/i.test(name));
+
+      // 添加过滤后的用户名到最终的用户名列表
+      usernames = usernames.concat(filteredNames);
+    } catch (error) {
+      console.error("Failed to fetch usernames:", error);
+      // 可以在这里添加重试逻辑或其他错误处理
+    }
+  }
+
+  // 返回数量满足要求的用户名
+  return usernames.slice(0, count);
 }
 
 // 创建下拉框函数
@@ -29,8 +70,18 @@ async function createDropdown(inputElement, idCount) {
     existingDropdown.remove();
   }
 
+  // 创建并添加加载动画
+  const loading = createLoadingAnimation();
+  inputElement.parentElement.style.position = 'relative';
+  loading.style.left = `${inputElement.offsetLeft + inputElement.offsetWidth - 25}px`;
+  loading.style.top = `${inputElement.offsetTop + (inputElement.offsetHeight / 2) - 10}px`;
+  inputElement.parentElement.appendChild(loading);
+
   // 获取随机用户名
   const usernames = await getRandomUsernames(idCount);
+
+  // 移除加载动画
+  loading.remove();
 
   // 创建新的下拉框
   const dropdown = document.createElement('div');

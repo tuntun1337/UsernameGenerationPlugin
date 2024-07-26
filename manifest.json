@@ -3,7 +3,7 @@
     "name": "Myth用户名生成器",
     "version": "1.0",
     "description": "自动生成用户名",
-    "permissions": ["activeTab", "storage","webRequest","background"],
+    "permissions": ["storage","background"],
     "action": {
       "default_popup": "popup.html"
       
